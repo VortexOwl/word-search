@@ -1,0 +1,8 @@
+logs/
+docs/
+code/old_main.py
+code/gui.py
+code/numpy_main.py
+code/test.py
+code/__pycache__
+.venv/
