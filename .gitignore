@@ -4,5 +4,5 @@
 /src/gui.py
 /src/numpy_main.py
 /src/test.py
-/src/__pycache__
-/.venv/
+__pycache__/
+.venv/
