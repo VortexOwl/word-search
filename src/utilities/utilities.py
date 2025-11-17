@@ -8,7 +8,7 @@ from os.path import isdir, getsize
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.config import is_clear_logs
+from src.logs.config import is_clear_logs
 
 
 def creating_necessary_folders(path:str) -> None:

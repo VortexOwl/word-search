@@ -7,7 +7,7 @@ from logging import basicConfig, getLogger, Formatter, Logger, FileHandler, Stre
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.logs.config import LOG_LEVEL
-from src.utilities import creating_necessary_folders
+from src.utilities.utilities import creating_necessary_folders
 
 
 def create_main_logger(formatter: Formatter, log_level:int) -> Logger:

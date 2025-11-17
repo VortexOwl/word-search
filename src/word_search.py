@@ -7,7 +7,7 @@ from os import path, mkdir
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.logs.logs import log_info
-from src.utilities import creating_necessary_folders
+from src.utilities.utilities import creating_necessary_folders
 
 
 def word_search() -> None:
