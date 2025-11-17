@@ -1,8 +1,8 @@
-logs/
-docs/
-code/old_main.py
-code/gui.py
-code/numpy_main.py
-code/test.py
-code/__pycache__
-.venv/
+/logs/
+/docs/
+/src/old_main.py
+/src/gui.py
+/src/numpy_main.py
+/src/test.py
+/src/__pycache__
+/.venv/
