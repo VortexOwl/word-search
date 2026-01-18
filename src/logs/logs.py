@@ -24,7 +24,7 @@ def log_debug(message:str) -> None:
     message: str = f'Module: {extract_stack(limit=2)[0].filename.split('/')[-1]} | Func: {extract_stack(limit=2)[0].name} | Line: {extract_stack(limit=2)[0].lineno} | Message: {message}'
     logger_main.debug(msg=message)
     if is_file_debug:
-        logger_debug.debug(msg=message, flush=True)    
+        logger_debug.debug(msg=message)    
     
 
 def log_warning(message:str) -> None:

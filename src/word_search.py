@@ -7,7 +7,7 @@ from re import sub as re_sub
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.logs.logs import log_info
+from src.logs import log_info
 from src.utilities.utilities import creating_necessary_folders
 
 
