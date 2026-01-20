@@ -18,7 +18,7 @@ def creating_necessary_folders(path:str) -> None:
 
 def clearing_logs() -> None:
     if is_clear_logs:
-        print('Введитие названия файлов журнала для их очистки через пробел.')
+        print('Введите названия файлов журнала для их очистки через пробел.')
         files_names = input().split(' ')
         if files_names[0] == '':
             files_names[0] = 'logs'
