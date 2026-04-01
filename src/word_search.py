@@ -30,7 +30,7 @@ def get_letters_not_in_word() -> str:
 
 def get_letters_in_word(letters_not_in_word:str) -> str:
     log_info(message='Введите буквы, которые присутствуют в искомом слове.')
-    letters_in_word = re_sub(pattern=rf'[{letters_not_in_word}]', repl='', string=''.join(dict.fromkeys(input().lower())))
+    letters_in_word = re_sub(pattern=rf'[{letters_not_in_word}]|[^а-я-]', repl='', string=''.join(dict.fromkeys(input().lower())))
     log_info(message=f'Введены буквы: {list(letters_in_word)}.')
     return letters_in_word
 
@@ -47,7 +47,7 @@ def get_letters_not_in_positions(letters_in_word:str, quantity_letters:int) -> l
 
 
 def get_letters_in_positions(letters_in_word:str, quantity_letters:int) -> str:
-    log_info(message='Введите буквы искомого слова, которые присутсвуют в определенных его позициях.')
+    log_info(message='Введите буквы искомого слова, которые присутствуют в определенных его позициях.')
     letters_in_positions = list()
     for index in range(quantity_letters):
         log_info(message=f'Позиция {index+1} ({index*'+'}*{(quantity_letters-index-1)*'+'}):')
@@ -63,15 +63,11 @@ def get_filters() -> tuple:
     letters_in_word = get_letters_in_word(letters_not_in_word=letters_not_in_word)
     letters_not_in_positions = get_letters_not_in_positions(letters_in_word=letters_in_word, quantity_letters=quantity_letters)
     letters_in_positions = get_letters_in_positions(letters_in_word=letters_in_word, quantity_letters=quantity_letters)
-    return quantity_letters, set(letters_not_in_word), set(letters_in_word), letters_not_in_positions, letters_in_positions
+    return quantity_letters, letters_not_in_word, letters_in_word, letters_not_in_positions, letters_in_positions
     
 
 def word_search():
     quantity_letters, letters_not_in_word, letters_in_word, letters_not_in_positions, letters_in_positions = get_filters()
-    letters = {
-        'й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ', 'ф', 'ы', 'в', 
-        'а', 'п', 'р', 'о', 'л', 'д', 'ж', 'э', 'я', 'ч', 'с', 'м', 'и', 'т', 'ь', 
-        'б', 'ю'}
     with open('resources/russian.txt', 'r', encoding='cp1251') as ru_words_file:
         russian_words = ru_words_file.read().lower()
     words = set(russian_words.splitlines())

@@ -2,8 +2,9 @@
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
 from datetime import timedelta, datetime
-from os import mkdir
+from os import mkdir, listdir
 from os.path import isdir, getsize
+from re import search
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
@@ -14,6 +15,12 @@ from src.logs.config import is_clear_logs
 def creating_necessary_folders(path:str) -> None:
     if not isdir(s=path):
         mkdir(path=path)
+
+
+def read_file_line_by_line(file_path: str) -> str:
+    with open(file_path, 'r', encoding='utf-8') as file:
+        for line in file:
+            yield line.strip()
 
 
 def clearing_logs() -> None:
