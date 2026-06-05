@@ -1,8 +1,7 @@
 /logs/
 /docs/
-/src/old_main.py
-/src/gui.py
-/src/numpy_main.py
-/src/test.py
 __pycache__/
 .venv/
+*.egg-info/
+dist/
+build/
