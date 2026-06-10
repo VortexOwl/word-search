@@ -1,0 +1,18 @@
+[project]
+name = "word-search"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.136.3",
+]
+
+[project.scripts]
+start = "start:start"
+basic = "start:start_basic"
+clear = "start:start_clear"
+web = "web.router:web_start"
+
+[tool.uv]
+package = true

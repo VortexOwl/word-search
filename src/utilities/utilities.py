@@ -1,52 +1,69 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
-from datetime import timedelta, datetime
-from os import mkdir, listdir
-from os.path import isdir, getsize
-from re import search
+from asyncio import to_thread as asyncio_to_thread
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterator, final
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.logs.config import is_clear_logs
+from logs import get_smart_logger
 
 
-def creating_necessary_folders(path:str) -> None:
-    if not isdir(s=path):
-        mkdir(path=path)
+@dataclass
+class Utilities:
+    _log = get_smart_logger()
 
+    @staticmethod
+    def read_file_line_by_line(file_path: Path, encoding = 'utf-8') -> Iterator[str]:
+        """
+        Читает файл построчно передавая в буфер данные по одной строке.
+        Полезен при файлах большого объема.
+        """
+        with file_path.open('r', encoding=encoding) as file:
+            for line in file:
+                yield line.strip()
 
-def read_file_line_by_line(file_path: str) -> str:
-    with open(file_path, 'r', encoding='utf-8') as file:
-        for line in file:
-            yield line.strip()
+    @classmethod
+    async def clearing_folder(cls, clear_folder: str) -> dict[str, int | tuple[str]]:
+        """
+        Асинхронно и безопасно очищает папку от файлов.
+        Возвращает статистику по успешным удалениям и ошибкам.
+        """
+        path_clear_folder = Path.cwd() / clear_folder
+        
+        if not path_clear_folder.exists() or not path_clear_folder.is_dir():
+            name_err = f"Путь не существует или не является папкой: {path_clear_folder}"
+            cls._log.warning(msg=name_err)
+            return {"success": 0, "errors": 1, "names of errors": (name_err)}
 
+        stats = {"success": 0, "errors": 0}
+        names_err = set()
 
-def clearing_logs() -> None:
-    if is_clear_logs:
-        print('Введите названия файлов журнала для их очистки через пробел.')
-        files_names = input().split(' ')
-        if files_names[0] == '':
-            files_names[0] = 'logs'
-        for file_name in files_names:
-            if file_name == 'info' or file_name == 'debug' or file_name == 'error' or file_name == 'warning' or file_name == 'fatal':
-                file_name = f'log_{file_name}'
-        for file_name in files_names:
-            if getsize(f'logs/{file_name}.log') / 1048576 > 1024:
-                print(f'Начата очистка файла {file_name}.log от данных месячной давности')
-                with open(f'logs/{file_name}.log', 'r') as file_logs:
-                    lines = file_logs.readlines()
-                with open(f'logs/{file_name}.log', 'w') as file_logs:
-                    last_date = datetime.now()
-                    last_date_log = last_date
-                    for line in lines:
-                        if line.find('INFO') != -1 or line.find('DEBUG') != -1 or line.find('WARNING') != -1 or line.find(
-                                'ERROR') != -1 or line.find('FATAL') != -1:
-                            date = datetime.strptime(line.split(' |')[0], '%Y-%m-%d %H:%M:%S')
-                            last_date_log = date
-                            if last_date - date <= timedelta(days=30):
-                                file_logs.write(line)
-                        else:
-                            if last_date - last_date_log <= timedelta(days=30):
-                                file_logs.write(line)
+        for file_name in path_clear_folder.iterdir():
+            try:
+                if file_name.is_file():
+                    await asyncio_to_thread(file_name.unlink, missing_ok=True)
+                    stats["success"] += 1
+
+            except PermissionError:
+                name_err = f"Нет прав на удаление файла: {file_name}"
+                cls._log.error(msg=name_err)
+                stats["errors"] += 1
+                names_err.add(name_err)
+
+            except FileNotFoundError:
+                pass
+                
+            except Exception as err:
+                name_err = f"Не удалось удалить {file_name}. Ошибка: {err}"
+                cls._log.exception(msg=name_err)
+                stats["errors"] += 1
+                names_err.add(name_err)
+        
+        stats["names of errors"] = tuple(names_err)
+        cls._log.info(msg=f"В директории {clear_folder} была проведена очистка от файлов.")
+        cls._log.debug(msg=f"Сводка выполнения очистки:\n{stats}")
+        return stats
