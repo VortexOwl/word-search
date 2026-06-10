@@ -1,4 +1,7 @@
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from logs.loggers import get_smart_logger, SmartLogger
+from utilities.basic_utilities_project import add_workdir_in_PATH
+
+
+add_workdir_in_PATH()

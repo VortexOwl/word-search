@@ -10,6 +10,9 @@ dependencies = [
 
 [project.scripts]
 start = "start:start"
+basic = "start:start_basic"
+clear = "start:start_clear"
+web = "web.router:web_start"
 
 [tool.uv]
 package = true
