@@ -1,25 +1,63 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
+from asyncio import create_task as a_create_task
+from asyncio import get_running_loop as a_get_running_loop
+from asyncio import sleep as a_sleep
+from contextlib import asynccontextmanager
 from enum import Enum
+from os import getpid as os_getpid
+from os import kill as os_kill
 from pathlib import Path
-from pydantic import Field
+from signal import SIGINT as signal_SIGINT
 from typing import Annotated
-
-# ----------------------------------------------------------------------------#
-# Project modules                                                             #
-# ----------------------------------------------------------------------------#
-from src.utilities import Utilities as uts
-from src.words.config import Config, LetterFilterModel
-from src.words.word_search import WordSearch
+from webbrowser import open as web_open
 
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
-from fastapi import FastAPI, Form, Depends, Query
+from fastapi import Depends, FastAPI, Query
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import Response, PlainTextResponse, FileResponse, RedirectResponse
+from fastapi.responses import (
+    FileResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+)
+from pydantic import Field
 from uvicorn import run as uvicorn_run
+
+# ----------------------------------------------------------------------------#
+# Project modules                                                             #
+# ----------------------------------------------------------------------------#
+from src.logs import SmartLogger, get_smart_logger
+from src.words.config import Config, LetterFilterModel, ServerConfig
+from src.words.word_search import WordSearch
+
+cfg = Config()
+log: SmartLogger = get_smart_logger()
+log.setLevel(cfg.log_level)
+
+
+async def open_browser() -> None:
+    sc = ServerConfig()
+    await a_sleep(1.5)
+    loop = a_get_running_loop()
+    loop.run_in_executor(None, web_open, f"http://{sc.host}:{sc.port}")
+
+
+@asynccontextmanager
+async def lifespan(web: FastAPI) -> None:
+    is_open_webbrowser = cfg.is_open_webbrowser
+    is_docker = cfg.is_docker
+
+    log.info(msg = "🚀 Сервер запускается...", pretty = True)
+    if is_open_webbrowser and not is_docker:
+        a_create_task(open_browser())
+    yield
+
+    log.info(msg = "🛑 Сервер останавливается...", pretty = True)
+    await a_sleep(1.5)
 
 
 web = FastAPI(
@@ -29,11 +67,9 @@ web = FastAPI(
         "tryItOutEnabled": True,
         "filter": True,
         "displayRequestDuration": True
-    }
+    },
+    lifespan = lifespan
 )
-
-
-cfg = Config()
 
 
 class IsYesOrNo(str, Enum):
@@ -98,73 +134,69 @@ class SearchQuery(LetterFilterModel):
         return [item.replace(" ", "") for item in check_clear]
 
     @classmethod
-    async def _search_query_form(
-        cls, 
-        is_web_save_file: Annotated[
+    async def _search_query_form(cls, is_web_save_file: Annotated[
             IsYesOrNo,
             Query(
                 alias="saving file",
                 description = "💾 Сохранить файл.", 
                 examples = [IsYesOrNo.NO]
             )
-        ],
-        word_length: Annotated[
+        ], word_length: Annotated[
             int,
             Query(
                 alias="word length",
                 description = "📙 Количество символов слова.", 
                 examples = [cfg.lfm.word_length]
             )
-        ] = cfg.lfm.word_length,
-        letters_included: Annotated[
+        ] = cfg.lfm.word_length, letters_included: Annotated[
             str, 
             Query(
                 alias = "included",
                 description = "✔️ Символы, которые гарантированно есть в слове.", 
                 examples = [cfg.lfm.letters_included]
             )
-        ] = cfg.lfm.letters_included,
-        letters_excluded: Annotated[
+        ] = cfg.lfm.letters_included, letters_excluded: Annotated[
             str, 
             Query(
                 alias = "excluded",
                 description = "❌ Символы, которых гарантированно нет в слове.", 
                 examples = [cfg.lfm.letters_excluded]
             )
-        ] = cfg.lfm.letters_excluded,
-        letters_fixed_pos: Annotated[
-            list[str], 
+        ] = cfg.lfm.letters_excluded, letters_fixed_pos: Annotated[
+            list[str] | None, 
             Query(
                 alias = "fixed position",
                 description = "📗 Символы искомого слова, которые присутствуют в данных позициях.  \n📗 Если символ позиции неизвестен, укажите пробел.",
                 examples = [[cfg.lfm.letters_fixed_pos[0]]]
             )
-        ] = [cfg.lfm.letters_fixed_pos[0]],
-        letters_excluded_pos: Annotated[
-            list[str], 
+        ] = None, letters_excluded_pos: Annotated[
+            list[str] | None, 
             Query(
                 alias = "excluded position",
                 description = "📕 Символы искомого слова, которые отсутствуют в данных позициях.  \n📕 Если символ позиции неизвестен, укажите пробел.", 
                 examples = [[cfg.lfm.letters_excluded_pos[0]]]
             )
-        ] = [cfg.lfm.letters_excluded_pos[0]]
-    ):
+        ] = None):
         """
         Собирает и обрабатывает параметры поиска из веб-формы.
         Преобразует данные формы в экземпляр модели `SearchQuery`.
         """
         
+        if letters_fixed_pos is None:
+            letters_fixed_pos = [cfg.lfm.letters_fixed_pos[0]]
+        if letters_excluded_pos is None:
+            letters_excluded_pos = [cfg.lfm.letters_excluded_pos[0]]
         letters_excluded = cls._clear_spaces(check_clear=letters_excluded)
         letters_included = cls._clear_spaces(check_clear=letters_included)
         letters_excluded_pos = cls._clear_spaces(check_clear=letters_excluded_pos)
         letters_fixed_pos = cls._clear_spaces(check_clear=letters_fixed_pos)
-        
+
         cls._validate_single_char_pos(
             check_list = letters_fixed_pos, 
             max_length = 1, 
             alias = "📗 Символы искомого слова, которые присутствуют в данных позициях"
         )
-        
+
         return cls(
             word_length = word_length, 
             letters_excluded = letters_excluded, 
@@ -184,6 +216,34 @@ async def root():
         url = "/docs",
         status_code = 307
     )
+
+@web.get(
+    '/shutdown',
+    description = "Посылает запрос на остановку веб-сервера.",
+    tags = ["⚙️ Конфигурация"],
+    summary = "Остановить веб-сервер"
+)
+async def shutdown():
+    os_kill(os_getpid(), signal_SIGINT)
+    log.info(msg = "Запрос на остановку сервера отправлен...", pretty = True)
+    return PlainTextResponse(
+            content = "Запрос на остановку сервера отправлен.",
+            status_code = 202
+        )
+
+
+@web.post(
+    '/clear-report-folder',
+    description = "Безопасно очищает папку для отчетов от файлов.",
+    tags = ["⚙️ Конфигурация"],
+    summary = "Очистить от файлов директорию для формирования отчётов"
+)
+async def clear_report_folder() -> dict:
+    """
+    Безопасно очищает папку от файлов.
+    Возвращает сводку по успешным удалениям и ошибкам.
+    """
+    return await WordSearch.clear_report_files()
 
 
 @web.get(
@@ -227,27 +287,17 @@ async def word_search(
     return PlainTextResponse(content = content)
 
 
-@web.post(
-    '/clear-report-folder',
-    description = "Безопасно очищает папку для отчетов от файлов.",
-    tags = ["⚙️ Конфигурация"],
-    summary = "Очистить от файлов директорию для формирования отчётов"
-)
-async def clear_report_folder() -> dict:
-    """
-    Безопасно очищает папку от файлов.
-    Возвращает сводку по успешным удалениям и ошибкам.
-    """
-    return await WordSearch.clear_report_files()
-
-
 def web_start() -> None:
     """
     Запускает веб-приложение FastAPI с использованием сервера Uvicorn.
     Читает параметры хоста и порта из конфигурации приложения.
     """
+    sc = ServerConfig()
     uvicorn_run(
-        f"{__name__}:web", host = cfg.host, port = cfg.port, reload = cfg.is_unicorn_reload
+        f"{__name__}:web", 
+        host = sc.host, 
+        port = sc.port, 
+        reload = sc.is_reload
     )
 
 
