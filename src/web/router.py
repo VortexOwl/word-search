@@ -24,7 +24,7 @@ from fastapi.responses import (
     RedirectResponse,
     Response,
 )
-from pydantic import Field
+from pydantic import ValidationError
 from uvicorn import run as uvicorn_run
 
 # ----------------------------------------------------------------------------#
@@ -35,8 +35,10 @@ from src.words.config import Config, LetterFilterModel, ServerConfig
 from src.words.word_search import WordSearch
 
 cfg = Config()
+lfm = LetterFilterModel()
 log: SmartLogger = get_smart_logger()
 log.setLevel(cfg.log_level)
+
 
 
 async def open_browser() -> None:
@@ -81,13 +83,6 @@ class SearchQuery(LetterFilterModel):
     """
     Модель параметров поиска для веб-формы.
     """
-    word_length: Annotated[int, Field(ge=2)] = 3
-    letters_excluded: str = ""
-    letters_included: str = ""
-    letters_excluded_pos: list[str] = Field(default_factory = list)
-    letters_fixed_pos: list[
-        Annotated[str, Field()]
-        ] = Field(default_factory = list)
     is_save_file: bool = False
     is_web_save_file: IsYesOrNo = IsYesOrNo.NO
 
@@ -146,57 +141,52 @@ class SearchQuery(LetterFilterModel):
             Query(
                 alias="word length",
                 description = "📙 Количество символов слова.", 
-                examples = [cfg.lfm.word_length]
+                examples = [SearchQuery().word_length]
             )
-        ] = cfg.lfm.word_length, letters_included: Annotated[
+        ] = 1, letters_included: Annotated[
             str, 
             Query(
                 alias = "included",
                 description = "✔️ Символы, которые гарантированно есть в слове.", 
-                examples = [cfg.lfm.letters_included]
+                examples = [SearchQuery().letters_included]
             )
-        ] = cfg.lfm.letters_included, letters_excluded: Annotated[
+        ] = "", letters_excluded: Annotated[
             str, 
             Query(
                 alias = "excluded",
                 description = "❌ Символы, которых гарантированно нет в слове.", 
-                examples = [cfg.lfm.letters_excluded]
+                examples = [SearchQuery().letters_excluded]
             )
-        ] = cfg.lfm.letters_excluded, letters_fixed_pos: Annotated[
-            list[str] | None, 
+        ] = "", letters_fixed_pos: Annotated[
+            list[str], 
             Query(
                 alias = "fixed position",
                 description = "📗 Символы искомого слова, которые присутствуют в данных позициях.  \n📗 Если символ позиции неизвестен, укажите пробел.",
-                examples = [[cfg.lfm.letters_fixed_pos[0]]]
+                examples = [[SearchQuery().letters_fixed_pos[0]]]
             )
         ] = None, letters_excluded_pos: Annotated[
-            list[str] | None, 
+            list[str], 
             Query(
                 alias = "excluded position",
                 description = "📕 Символы искомого слова, которые отсутствуют в данных позициях.  \n📕 Если символ позиции неизвестен, укажите пробел.", 
-                examples = [[cfg.lfm.letters_excluded_pos[0]]]
+                examples = [[SearchQuery().letters_excluded_pos[0]]]
             )
         ] = None):
         """
         Собирает и обрабатывает параметры поиска из веб-формы.
         Преобразует данные формы в экземпляр модели `SearchQuery`.
         """
-        
-        if letters_fixed_pos is None:
-            letters_fixed_pos = [cfg.lfm.letters_fixed_pos[0]]
-        if letters_excluded_pos is None:
-            letters_excluded_pos = [cfg.lfm.letters_excluded_pos[0]]
-        letters_excluded = cls._clear_spaces(check_clear=letters_excluded)
-        letters_included = cls._clear_spaces(check_clear=letters_included)
-        letters_excluded_pos = cls._clear_spaces(check_clear=letters_excluded_pos)
-        letters_fixed_pos = cls._clear_spaces(check_clear=letters_fixed_pos)
+        letters_excluded = cls._clear_spaces(check_clear = letters_excluded)
+        letters_included = cls._clear_spaces(check_clear = letters_included)
+        letters_excluded_pos = cls._clear_spaces(check_clear = letters_excluded_pos or [""])
+        letters_fixed_pos = cls._clear_spaces(check_clear = letters_fixed_pos or [""])
 
         cls._validate_single_char_pos(
             check_list = letters_fixed_pos, 
             max_length = 1, 
             alias = "📗 Символы искомого слова, которые присутствуют в данных позициях"
         )
-
+    
         return cls(
             word_length = word_length, 
             letters_excluded = letters_excluded, 
@@ -217,6 +207,7 @@ async def root():
         status_code = 307
     )
 
+
 @web.get(
     '/shutdown',
     description = "Посылает запрос на остановку веб-сервера.",
@@ -234,13 +225,13 @@ async def shutdown():
 
 @web.post(
     '/clear-report-folder',
-    description = "Безопасно очищает папку для отчетов от файлов.",
+    description = "Очищает папку для отчетов от файлов.",
     tags = ["⚙️ Конфигурация"],
     summary = "Очистить от файлов директорию для формирования отчётов"
 )
 async def clear_report_folder() -> dict:
     """
-    Безопасно очищает папку от файлов.
+    Очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
     return await WordSearch.clear_report_files()
@@ -261,16 +252,17 @@ async def word_search(
     """
     Обработчик запроса фильтрации слов по заданным в формах критериям.
     """
-    found_words: str
-    report_path: Path
     if search_query.is_web_save_file == IsYesOrNo.YES:
         search_query.is_save_file = True
+    
+    if search_query.word_length <= 1:
+        content = f"Совпадений не обнаружено.\nКоличество найденных слов: 0"
+        return PlainTextResponse(content = content)
     
     found_words, quantity_words, report_path = WordSearch.run_search(lfm = search_query)
     
     if not found_words:
-        content = f"Количество слов: {quantity_words}"
-        found_words = "Совпадений не обнаружено."
+        content = f"Совпадений не обнаружено.\nКоличество найденных слов: {quantity_words}"
         return PlainTextResponse(content = content)
 
     if search_query.is_save_file:
@@ -283,7 +275,7 @@ async def word_search(
             }
         )
 
-    content = f"Количество слов: {quantity_words}\n\n{found_words}"
+    content = f"Количество найденных слов: {quantity_words}\n\n{found_words}"
     return PlainTextResponse(content = content)
 
 

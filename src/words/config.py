@@ -8,8 +8,8 @@ from pathlib import Path
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
-from pydantic import BaseModel, Field, SettingsConfigDict, model_validator
-from pydantic_settings import BaseSettings
+from pydantic import Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ServerConfig(BaseSettings):
@@ -34,7 +34,7 @@ class ServerConfig(BaseSettings):
         return data
 
 
-class LetterFilterModel(BaseModel):
+class LetterFilterModel(BaseSettings):
     """
     Модель параметров фильтрации слов.
 
@@ -49,11 +49,13 @@ class LetterFilterModel(BaseModel):
         is_save_file: булевское значение True/False, отвечающее на вопрос 
         сохранять ли результат фильтрации в текстовый файл.
     """
+    model_config = SettingsConfigDict(env_prefix="LFM_")
+
     word_length: int = 5
-    letters_excluded: str = ""
-    letters_included: str = ""
-    letters_excluded_pos: list[str] = Field(default_factory = list)
-    letters_fixed_pos: list[str] = Field(default_factory = list)
+    letters_excluded: str = "лт"
+    letters_included: str = "аб"
+    letters_excluded_pos: list[str] = ["а", "", "б", "", ""]
+    letters_fixed_pos: list[str] = ["б", "а", "", "", ""]
     is_save_file: bool = True
 
 
@@ -74,15 +76,6 @@ class Config(BaseSettings):
     pattern_ru_letters: str = r'[^а-яё-]'
     report_folder: str = 'docs'
     report_file: str = 'Found words.txt'
-    
-    lfm: LetterFilterModel = field(default_factory = lambda: LetterFilterModel(
-        word_length = 5,
-        letters_excluded = "лт",
-        letters_included = "аб",
-        letters_excluded_pos = ["а", "", "б", "", ""],
-        letters_fixed_pos = ["б", "а", "", "", ""],
-        is_save_file = True
-    ))
 
     @property
     def path_data_folder(self) -> Path:
