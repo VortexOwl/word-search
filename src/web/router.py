@@ -22,6 +22,7 @@ from fastapi.responses import (
     FileResponse,
     PlainTextResponse,
     RedirectResponse,
+    JSONResponse,
     Response,
 )
 from pydantic import ValidationError
@@ -235,7 +236,8 @@ async def clear_report_folder() -> dict:
     Очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
-    return await WordSearch.clear_report_files()
+    report = await WordSearch.clear_report_files()
+    return JSONResponse(content = report, status_code = status.HTTP_200_OK)
 
 
 @web.get(

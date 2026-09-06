@@ -393,7 +393,7 @@ class WordSearch:
         path_report_folder: Path = cls.cfg.path_report_folder
         path_report_file: Path = cls.cfg.path_report_file
 
-        path_report_folder.mkdir(parents=True, exist_ok = True)
+        path_report_folder.mkdir(parents = True, exist_ok = True)
 
         with path_report_file.open('w', encoding = 'utf-8') as words_file:
             words_file.write(words)
@@ -413,7 +413,7 @@ class WordSearch:
         Асинхронно и безопасно очищает папку от файлов.
         Возвращает статистику по успешным удалениям и ошибкам.
         """
-        return await uts.clearing_folder(clear_folder=cls.cfg.report_folder)
+        return await uts.clearing_folder(clear_folder = cls.cfg.report_folder)
 
     @classmethod
     def run_search(
