@@ -259,30 +259,41 @@ async def word_search(
 
         if search_query.word_length <= 1:
             content = f"Совпадений не обнаружено.\nКоличество найденных слов: 0"
-            return PlainTextResponse(content = content)
+            return PlainTextResponse(
+                content = content, 
+                status_code = status.HTTP_404_NOT_FOUND
+            )
 
         found_words, quantity_words, report_path = WordSearch.run_search(lfm = search_query)
 
         if not found_words:
             content = f"Совпадений не обнаружено.\nКоличество найденных слов: {quantity_words}"
-            return PlainTextResponse(content = content)
+            return PlainTextResponse(
+                content = content,
+                status_code = status.HTTP_404_NOT_FOUND
+            )
 
         if search_query.is_save_file:
             return FileResponse(
                 path = report_path,
                 filename = report_path.name,
                 media_type = "text/plain",
-                headers={
+                headers = {
                     "Quantity-Found-Words": str(quantity_words)
-                }
+                },
+                status_code = status.HTTP_200_OK
             )
 
         content = f"Количество найденных слов: {quantity_words}\n\n{found_words}"
-        return PlainTextResponse(content = content)
+        return PlainTextResponse(
+            content = content, 
+            status_code = status.HTTP_200_OK
+        )
     except ValueError as err:
         log.error(msg=f"ValueError: {err}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
+            status_code = status.HTTP_400_BAD_REQUEST, 
+            detail = str(err)
         ) from err
 
 def web_start() -> None:
