@@ -62,9 +62,6 @@ class LetterFilterModel(BaseSettings):
 class Config(BaseSettings):
     """
     Конфигурация приложения.
-
-    Содержит настройки веб-сервера, пути к файлам словаря и отчёта,
-    параметры кодировки и базовую модель фильтрации LetterFilterModel.
     """
     model_config = SettingsConfigDict(env_prefix="APP_")
 
@@ -96,23 +93,3 @@ class Config(BaseSettings):
     @property
     def is_docker(self) -> bool:
         return Path('/.dockerenv').exists()
-    
-    def __post_init__(self):
-        """
-        Инициализирует производные поля конфигурации после создания экземпляра.
-
-        Приводит списки `letters_excluded_pos` и `letters_fixed_pos`
-        к длине `word_length`, обрезая лишние и заполняя недостающие позиции 
-        пустыми строками.
-        """
-        if len(self.lfm.letters_excluded_pos) != self.lfm.word_length:
-            self.lfm.letters_excluded_pos = (
-                self.lfm.letters_excluded_pos[: self.lfm.word_length]
-                + [""] * max(0, self.lfm.word_length - len(self.lfm.letters_excluded_pos))
-            )
-
-        if len(self.lfm.letters_fixed_pos) != self.lfm.word_length:
-            self.lfm.letters_fixed_pos = (
-                self.lfm.letters_fixed_pos[: self.lfm.word_length]
-                + [""] * max(0, self.lfm.word_length - len(self.lfm.letters_fixed_pos))
-            )
