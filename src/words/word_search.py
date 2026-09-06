@@ -212,11 +212,10 @@ class WordSearch:
         
         if lfm.word_length > len_letters_excluded_pos:
             for _ in range(lfm.word_length - len_letters_excluded_pos):
-                lfm.letters_excluded_pos.append("")
+                lfm.letters_excluded_pos.append('')
 
         if lfm.word_length > len_letters_fixed_pos:
-            for _ in range(lfm.word_length - len_letters_fixed_pos):
-                lfm.letters_fixed_pos.append("")
+            lfm.letters_fixed_pos = f'{lfm.letters_fixed_pos}{(lfm.word_length - len_letters_fixed_pos)*"+"}'
 
         table_excluded = str.maketrans('', '', lfm.letters_excluded)
         lfm.letters_included = lfm.letters_included.translate(table_excluded)
