@@ -16,7 +16,7 @@ from webbrowser import open as web_open
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, Query, HTTPException, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import (
     FileResponse,
@@ -205,7 +205,7 @@ async def root():
     """
     return RedirectResponse(
         url = "/docs",
-        status_code = 307
+        status_code = status.HTTP_307_TEMPORARY_REDIRECT
     )
 
 
@@ -220,7 +220,7 @@ async def shutdown():
     log.info(msg = "Запрос на остановку сервера отправлен...", pretty = True)
     return PlainTextResponse(
             content = "Запрос на остановку сервера отправлен.",
-            status_code = 202
+            status_code = status.HTTP_202_ACCEPTED
         )
 
 
@@ -253,32 +253,37 @@ async def word_search(
     """
     Обработчик запроса фильтрации слов по заданным в формах критериям.
     """
-    if search_query.is_web_save_file == IsYesOrNo.YES:
-        search_query.is_save_file = True
-    
-    if search_query.word_length <= 1:
-        content = f"Совпадений не обнаружено.\nКоличество найденных слов: 0"
+    try:
+        if search_query.is_web_save_file == IsYesOrNo.YES:
+            search_query.is_save_file = True
+
+        if search_query.word_length <= 1:
+            content = f"Совпадений не обнаружено.\nКоличество найденных слов: 0"
+            return PlainTextResponse(content = content)
+
+        found_words, quantity_words, report_path = WordSearch.run_search(lfm = search_query)
+
+        if not found_words:
+            content = f"Совпадений не обнаружено.\nКоличество найденных слов: {quantity_words}"
+            return PlainTextResponse(content = content)
+
+        if search_query.is_save_file:
+            return FileResponse(
+                path = report_path,
+                filename = report_path.name,
+                media_type = "text/plain",
+                headers={
+                    "Quantity-Found-Words": str(quantity_words)
+                }
+            )
+
+        content = f"Количество найденных слов: {quantity_words}\n\n{found_words}"
         return PlainTextResponse(content = content)
-    
-    found_words, quantity_words, report_path = WordSearch.run_search(lfm = search_query)
-    
-    if not found_words:
-        content = f"Совпадений не обнаружено.\nКоличество найденных слов: {quantity_words}"
-        return PlainTextResponse(content = content)
-
-    if search_query.is_save_file:
-        return FileResponse(
-            path = report_path,
-            filename = report_path.name,
-            media_type = "text/plain",
-            headers={
-                "Quantity-Found-Words": str(quantity_words)
-            }
-        )
-
-    content = f"Количество найденных слов: {quantity_words}\n\n{found_words}"
-    return PlainTextResponse(content = content)
-
+    except ValueError as err:
+        log.error(msg=f"ValueError: {err}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)
+        ) from err
 
 def web_start() -> None:
     """
