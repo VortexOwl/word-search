@@ -143,7 +143,7 @@ class SearchQuery(LetterFilterModel):
                 description = "📙 Количество символов слова.", 
                 examples = [SearchQuery().word_length]
             )
-        ] = 1, letters_included: Annotated[
+        ] = 0, letters_included: Annotated[
             str, 
             Query(
                 alias = "included",

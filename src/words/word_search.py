@@ -36,20 +36,20 @@ class WordSearch:
             длиной не менее 2.
             """
             while True:
-                cls.log.info(msg = 'Введите количество символов искомого слова (не менее 2).')
+                cls.log.info(msg = 'Введите количество символов искомого слова (не менее 2).', pretty = True)
                 raw: str = def_input if def_input is not None else input()
                 cleaned = re_sub(pattern=r'\D', repl='', string=raw)
 
                 if not cleaned:
-                    cls.log.info(msg = 'Не удалось распознать число. Повторите ввод.')
+                    cls.log.info(msg = 'Не удалось распознать число. Повторите ввод.', pretty = True)
                     continue
 
                 quantity = int(cleaned)
                 if quantity < 2:
-                    cls.log.info(msg = 'Слишком короткое слово. Введите число не менее 2.')
+                    cls.log.info(msg = 'Слишком короткое слово. Введите число не менее 2.', pretty = True)
                     continue
 
-                cls.log.info(msg = f"Введено число: '{quantity}'.")
+                cls.log.info(msg = f"Введено число: '{quantity}'.", pretty = True)
                 return quantity
 
         @classmethod
@@ -58,14 +58,14 @@ class WordSearch:
             Запрашивает у пользователя символы, которых гарантированно нет в слове.
             Возвращает уникальные русские буквы и дефис в нижнем регистре.
             """
-            cls.log.info(msg = 'Введите символы, которых нет в искомом слове.')
+            cls.log.info(msg = 'Введите символы, которых нет в искомом слове.', pretty = True)
             raw: str = def_input if def_input is not None else input()
             letters_excluded = re_sub(
                 pattern=cls.cfg.pattern_ru_letters, 
                 repl='', 
                 string= cls._uniq_chars(letters=raw)
             )
-            cls.log.info(msg = f'Были обнаружены символы: {list(letters_excluded)}.')
+            cls.log.info(msg = f'Были обнаружены символы: {list(letters_excluded)}.', pretty = True)
             return letters_excluded
 
         @classmethod
@@ -78,7 +78,7 @@ class WordSearch:
             Запрашивает у пользователя символы, которые гарантированно есть в слове.
             Возвращает уникальные русские буквы и дефис в нижнем регистре.
             """
-            cls.log.info(msg = 'Введите символы, которые присутствуют в искомом слове.')
+            cls.log.info(msg = 'Введите символы, которые присутствуют в искомом слове.', pretty = True)
             raw: str = def_input if def_input is not None else input()
             if letters_excluded:
                 pattern = rf'[{re_escape(letters_excluded)}]|{cls.cfg.pattern_ru_letters}'
@@ -89,7 +89,7 @@ class WordSearch:
                 repl='', 
                 string= cls._uniq_chars(letters=raw)
             )
-            cls.log.info(msg = f'Были обнаружены символы: {list(letters_included)}.')
+            cls.log.info(msg = f'Были обнаружены символы: {list(letters_included)}.', pretty = True)
             return letters_included
 
         @classmethod
@@ -114,16 +114,16 @@ class WordSearch:
 
             letters_excluded_pos: list[str] = []
             
-            cls.log.info(msg = 'Введите символы искомого слова, которых нет в данных позициях.')
+            cls.log.info(msg = 'Введите символы искомого слова, которых нет в данных позициях.', pretty = True)
             for index in range(word_length):
-                cls.log.info(msg = f"Позиция {index+1} ({index*'+'}*{(word_length-index-1)*'+'}):")
+                cls.log.info(msg = f"Позиция {index+1} ({index*'+'}*{(word_length-index-1)*'+'}):", pretty = True)
                 raw: str = def_input[index] if def_input is not None else input()
                 letters_excluded_pos_item = re_sub(
                     pattern=rf'[^{re_escape(letters_included)}]' , 
                     repl='', 
                     string= cls._uniq_chars(letters=raw)
                 )
-                cls.log.info(msg = f'Были обнаружены символы: {list(letters_excluded_pos_item)}.')
+                cls.log.info(msg = f'Были обнаружены символы: {list(letters_excluded_pos_item)}.', pretty = True)
                 letters_excluded_pos.append(letters_excluded_pos_item)
             return letters_excluded_pos
 
@@ -153,17 +153,18 @@ class WordSearch:
                 msg = (
                     'Введите символы искомого слова, которые находятся в данных позициях. '
                     'Будет считан первый подходящий символ для каждой позиции.'
-                )
+                ), 
+                pretty = True
             )
             for index in range(word_length):
-                cls.log.info(msg = f"Позиция {index+1} ({index*'+'}*{(word_length-index-1)*'+'}):")
+                cls.log.info(msg = f"Позиция {index+1} ({index*'+'}*{(word_length-index-1)*'+'}):", pretty = True)
                 raw: str = def_input[index] if def_input is not None else input()
                 letters_fixed_pos_item = (re_sub(
                     pattern=rf'[^{re_escape(letters_included)}]', 
                     repl='', 
                     string= cls._uniq_chars(letters=raw)
                 ))[:1]
-                cls.log.info(msg = f'Были обнаружены символы: {list(letters_fixed_pos_item)}.')
+                cls.log.info(msg = f'Были обнаружены символы: {list(letters_fixed_pos_item)}.', pretty = True)
                 letters_fixed_pos.append(letters_fixed_pos_item)
             return letters_fixed_pos
 
@@ -415,7 +416,8 @@ class WordSearch:
             msg = (
                 f'Файл с отобранными словами создан по пути: '
                 f'"{path_report_file.relative_to(Path.cwd())}".'
-            )
+            ), 
+            pretty = True
         )
         return path_report_file
 
@@ -457,12 +459,12 @@ class WordSearch:
         if lfm is None:
             lfm = cls.lfm.copy()
 
-        cls.log.info(msg = 'Начат перебор слов.')
+        cls.log.info(msg = 'Начат перебор слов.', pretty = True)
         words: list[str] = cls._filter_words(is_input = is_input, lfm=lfm)
-        cls.log.info(msg = 'Перебор слов завершен.')
+        cls.log.info(msg = 'Перебор слов завершен.', pretty = True)
 
         quantity_words = len(words)
-        cls.log.info(msg = f'Найдено слов: {quantity_words}.')
+        cls.log.info(msg = f'Найдено слов: {quantity_words}.', pretty = True)
 
         word_lines: str = cls._normalized_word_lines(words = words)
         
