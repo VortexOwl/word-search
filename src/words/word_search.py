@@ -9,7 +9,7 @@ from re import sub as re_sub, escape as re_escape
 # ----------------------------------------------------------------------------#
 from src.logs import get_smart_logger
 from src.utilities import Utilities as uts
-from src.words.config import Config, LetterFilterModel
+from src.config import Config, LetterFilterModel
 
 
 class WordSearch:

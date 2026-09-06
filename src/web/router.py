@@ -32,7 +32,7 @@ from uvicorn import run as uvicorn_run
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.logs import SmartLogger, get_smart_logger
-from src.words.config import Config, LetterFilterModel, ServerConfig
+from src.config import Config, LetterFilterModel, ServerConfig
 from src.words.word_search import WordSearch
 
 cfg = Config()
