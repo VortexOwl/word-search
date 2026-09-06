@@ -198,7 +198,6 @@ class WordSearch:
         Возвращает:
             Скорректированный экземпляр `LetterFilterModel`, готовый для поиска.
         """
-        lfm: LetterFilterModel = lfm.copy()    #!
         len_letters_excluded_pos: int = len(lfm.letters_excluded_pos)
         len_letters_fixed_pos: int = len(lfm.letters_fixed_pos)
 
@@ -307,21 +306,9 @@ class WordSearch:
 
         Возвращает:
             True, если слово удовлетворяет всем ограничениям по позициям, иначе False.
-
-        Исключения:
-            ValueError: Если длина `letters_fixed_pos` или `letters_excluded_pos` 
-            не совпадает с длиной `word`.
         """
         if not letters_fixed_pos and not letters_excluded_pos:
             return True
-        
-        if (
-            len(letters_fixed_pos) > len(word)              #!
-            or len(letters_excluded_pos) > len(word)
-        ):
-            raise ValueError(
-                "letters_fixed_pos и letters_excluded_pos должны соответствовать длине слова."
-            )
         
         for index, letter in enumerate(word):
             forbidden = letters_excluded_pos[index]
