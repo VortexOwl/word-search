@@ -40,7 +40,6 @@ log: SmartLogger = get_smart_logger()
 log.setLevel(cfg.log_level)
 
 
-
 async def open_browser() -> None:
     sc = ServerConfig()
     await a_sleep(1.5)
@@ -158,13 +157,13 @@ class SearchQuery(LetterFilterModel):
                 examples = [SearchQuery().letters_excluded]
             )
         ] = "", letters_fixed_pos: Annotated[
-            list[str], 
+            str, 
             Query(
                 alias = "fixed position",
-                description = "📗 Символы искомого слова, которые присутствуют в данных позициях.  \n📗 Если символ позиции неизвестен, укажите пробел.",
-                examples = [[SearchQuery().letters_fixed_pos[0]]]
+                description = "📗 Символы искомого слова, которые присутствуют в данных позициях.  \n📗 Если символ позиции неизвестен, укажите \"+\".",
+                examples = [SearchQuery().letters_fixed_pos]
             )
-        ] = None, letters_excluded_pos: Annotated[
+        ] = "", letters_excluded_pos: Annotated[
             list[str], 
             Query(
                 alias = "excluded position",
@@ -179,14 +178,16 @@ class SearchQuery(LetterFilterModel):
         letters_excluded = cls._clear_spaces(check_clear = letters_excluded)
         letters_included = cls._clear_spaces(check_clear = letters_included)
         letters_excluded_pos = cls._clear_spaces(check_clear = letters_excluded_pos or [""])
-        letters_fixed_pos = cls._clear_spaces(check_clear = letters_fixed_pos or [""])
+        letters_fixed_pos = cls._clear_spaces(check_clear = letters_fixed_pos)
 
+        """
         cls._validate_single_char_pos(
             check_list = letters_fixed_pos, 
             max_length = 1, 
             alias = "📗 Символы искомого слова, которые присутствуют в данных позициях"
         )
-    
+        """
+
         return cls(
             word_length = word_length, 
             letters_excluded = letters_excluded, 

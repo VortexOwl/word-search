@@ -53,9 +53,9 @@ class LetterFilterModel(BaseSettings):
 
     word_length: int = 5
     letters_excluded: str = "лт"
-    letters_included: str = "аб"
+    letters_included: str = "аня"
     letters_excluded_pos: list[str] = ["а", "", "б", "", ""]
-    letters_fixed_pos: list[str] = ["б", "а", "", "", ""]
+    letters_fixed_pos: list[str] | str = "+а+н+"
     is_save_file: bool = True
 
 
