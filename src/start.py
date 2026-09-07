@@ -10,6 +10,10 @@ from utilities.basic_utilities_project import add_workdir_in_PATH
 add_workdir_in_PATH()
 from src.words import ApplicationService as app
 
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
+
 ws = app.WordSearch
 
 
