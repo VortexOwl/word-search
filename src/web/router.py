@@ -33,12 +33,13 @@ from uvicorn import run as uvicorn_run
 # ----------------------------------------------------------------------------#
 from src.logs import SmartLogger, get_smart_logger
 from src.config import Config, LetterFilterModel, ServerConfig
-from src.words.word_search import WordSearch
+from src.app import ApplicationService as app
 
 cfg = Config()
 lfm = LetterFilterModel()
 log: SmartLogger = get_smart_logger()
 log.setLevel(cfg.log_level)
+ws = app.WordSearch
 
 
 async def open_browser() -> None:
@@ -236,7 +237,7 @@ async def clear_report_folder() -> dict:
     Очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
-    report = await WordSearch.clear_report_files()
+    report = await app.clear_report_files()
     return JSONResponse(content = report, status_code = status.HTTP_200_OK)
 
 
@@ -266,7 +267,7 @@ async def word_search(
                 status_code = status.HTTP_404_NOT_FOUND
             )
 
-        found_words, quantity_words, report_path = WordSearch.run_search(lfm = search_query)
+        found_words, quantity_words, report_path = ws.run_search(lfm = search_query)
 
         if not found_words:
             content = f"Совпадений не обнаружено.\nКоличество найденных слов: {quantity_words}"
