@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 from enum import Enum
 from os import getpid as os_getpid
 from os import kill as os_kill
-from pathlib import Path
 from signal import SIGINT as signal_SIGINT
 from typing import Annotated
 from webbrowser import open as web_open
@@ -16,24 +15,27 @@ from webbrowser import open as web_open
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
-from fastapi import Depends, FastAPI, Query, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import (
     FileResponse,
+    JSONResponse,
     PlainTextResponse,
     RedirectResponse,
-    JSONResponse,
     Response,
 )
-from pydantic import ValidationError
 from uvicorn import run as uvicorn_run
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.logs import SmartLogger, get_smart_logger
-from src.config import Config, LetterFilterModel, ServerConfig
 from src.app import ApplicationService as app
+from src.config import Config, LetterFilterModel, ServerConfig
+from src.logs import SmartLogger, get_smart_logger
+
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 cfg = Config()
 lfm = LetterFilterModel()
@@ -261,7 +263,7 @@ async def word_search(
             search_query.is_save_file = True
 
         if search_query.word_length <= 1:
-            content = f"Совпадений не обнаружено.\nКоличество найденных слов: 0"
+            content = "Совпадений не обнаружено.\nКоличество найденных слов: 0"
             return PlainTextResponse(
                 content = content, 
                 status_code = status.HTTP_404_NOT_FOUND

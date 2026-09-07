@@ -2,15 +2,19 @@
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
 from pathlib import Path
-from re import sub as re_sub, escape as re_escape
+from re import escape as re_escape
+from re import sub as re_sub
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.logs import get_smart_logger
 from src.config import Config, LetterFilterModel
+from src.logs import get_smart_logger
 from src.utilities import Utilities as uts
 
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 class ApplicationService:
     cfg = Config()
