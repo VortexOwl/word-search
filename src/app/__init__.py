@@ -1,0 +1,1 @@
+from app.word_search import ApplicationService

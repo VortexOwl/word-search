@@ -2,7 +2,6 @@
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
 from dataclasses import field
-from os import getenv
 from pathlib import Path
 
 # ----------------------------------------------------------------------------#
