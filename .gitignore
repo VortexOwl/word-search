@@ -1,7 +1,12 @@
-/logs/
-/docs/
+# Python-generated files
 __pycache__/
-.venv/
 *.egg-info/
 dist/
 build/
+
+# Virtual environments
+.venv/
+
+# Local project files
+/logs/
+/docs/
