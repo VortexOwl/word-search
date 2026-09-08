@@ -741,8 +741,12 @@ name = "word-search"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "colorama" },
     { name = "fastapi", extra = ["standard"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fastapi", extras = ["standard"], specifier = ">=0.136.3" }]
+requires-dist = [
+    { name = "colorama", specifier = ">=0.4.6" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.136.3" },
+]

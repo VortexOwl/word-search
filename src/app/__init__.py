@@ -1,4 +1,4 @@
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from utilities.utilities import Utilities
+from app.word_search import ApplicationService
