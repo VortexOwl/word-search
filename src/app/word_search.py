@@ -16,15 +16,17 @@ from src.utilities import Utilities as uts
 # Application code                                                            #
 # ----------------------------------------------------------------------------#
 
+
 class ApplicationService:
     cfg = Config()
+
     @classmethod
     async def clear_report_files(cls) -> dict[str, int | tuple[str]]:
         """
         Очищает папку от файлов.
         Возвращает статистику по успешным удалениям и ошибкам.
         """
-        return await uts.clearing_folder(clear_folder = cls.cfg.report_folder)
+        return await uts.clearing_folder(clear_folder=cls.cfg.report_folder)
 
     class WordSearch:
         cfg = Config()
@@ -36,34 +38,42 @@ class ApplicationService:
             """
             Возвращает строку уникальных символов в нижнем регистре в порядке первого появления.
             """
-            return ''.join(dict.fromkeys(letters.lower()))
-
+            return "".join(dict.fromkeys(letters.lower()))
 
         class InputWordSearch:
             @classmethod
-            def input_len_word(cls, def_input:str | None = None) -> int:
+            def input_len_word(cls, def_input: str | None = None) -> int:
                 """
                 Запрашивает у пользователя длину искомого слова (не менее 2 символов).
-                
-                Пользователь вводит строку, из которой извлекаются только цифры. 
-                Ввод повторяется до тех пор, пока не будет получено корректное число 
+
+                Пользователь вводит строку, из которой извлекаются только цифры.
+                Ввод повторяется до тех пор, пока не будет получено корректное число
                 длиной не менее 2.
                 """
                 while True:
-                    cls.log.info(msg = 'Введите количество символов искомого слова (не менее 2).', pretty = True)
+                    cls.log.info(
+                        msg="Введите количество символов искомого слова (не менее 2).",
+                        pretty=True,
+                    )
                     raw: str = def_input if def_input is not None else input()
-                    cleaned = re_sub(pattern=r'\D', repl='', string=raw)
+                    cleaned = re_sub(pattern=r"\D", repl="", string=raw)
 
                     if not cleaned:
-                        cls.log.info(msg = 'Не удалось распознать число. Повторите ввод.', pretty = True)
+                        cls.log.info(
+                            msg="Не удалось распознать число. Повторите ввод.",
+                            pretty=True,
+                        )
                         continue
 
                     quantity = int(cleaned)
                     if quantity < 2:
-                        cls.log.info(msg = 'Слишком короткое слово. Введите число не менее 2.', pretty = True)
+                        cls.log.info(
+                            msg="Слишком короткое слово. Введите число не менее 2.",
+                            pretty=True,
+                        )
                         continue
 
-                    cls.log.info(msg = f"Введено число: '{quantity}'.", pretty = True)
+                    cls.log.info(msg=f"Введено число: '{quantity}'.", pretty=True)
                     return quantity
 
             @classmethod
@@ -72,52 +82,61 @@ class ApplicationService:
                 Запрашивает у пользователя символы, которых гарантированно нет в слове.
                 Возвращает уникальные русские буквы и дефис в нижнем регистре.
                 """
-                cls.log.info(msg = 'Введите символы, которых нет в искомом слове.', pretty = True)
+                cls.log.info(
+                    msg="Введите символы, которых нет в искомом слове.", pretty=True
+                )
                 raw: str = def_input if def_input is not None else input()
                 letters_excluded = re_sub(
-                    pattern=cls.cfg.pattern_ru_letters, 
-                    repl='', 
-                    string= cls._uniq_chars(letters=raw)
+                    pattern=cls.cfg.pattern_ru_letters,
+                    repl="",
+                    string=cls._uniq_chars(letters=raw),
                 )
-                cls.log.info(msg = f'Были обнаружены символы: {list(letters_excluded)}.', pretty = True)
+                cls.log.info(
+                    msg=f"Были обнаружены символы: {list(letters_excluded)}.",
+                    pretty=True,
+                )
                 return letters_excluded
 
             @classmethod
             def input_letters_included(
-                cls, 
-                letters_excluded: str, 
-                def_input:str | None = None
+                cls, letters_excluded: str, def_input: str | None = None
             ) -> str:
                 """
                 Запрашивает у пользователя символы, которые гарантированно есть в слове.
                 Возвращает уникальные русские буквы и дефис в нижнем регистре.
                 """
-                cls.log.info(msg = 'Введите символы, которые присутствуют в искомом слове.', pretty = True)
+                cls.log.info(
+                    msg="Введите символы, которые присутствуют в искомом слове.",
+                    pretty=True,
+                )
                 raw: str = def_input if def_input is not None else input()
                 if letters_excluded:
-                    pattern = rf'[{re_escape(letters_excluded)}]|{cls.cfg.pattern_ru_letters}'
+                    pattern = (
+                        rf"[{re_escape(letters_excluded)}]|{cls.cfg.pattern_ru_letters}"
+                    )
                 else:
                     pattern = cls.cfg.pattern_ru_letters
                 letters_included = re_sub(
-                    pattern=pattern,
-                    repl='', 
-                    string= cls._uniq_chars(letters=raw)
+                    pattern=pattern, repl="", string=cls._uniq_chars(letters=raw)
                 )
-                cls.log.info(msg = f'Были обнаружены символы: {list(letters_included)}.', pretty = True)
+                cls.log.info(
+                    msg=f"Были обнаружены символы: {list(letters_included)}.",
+                    pretty=True,
+                )
                 return letters_included
 
             @classmethod
             def input_letters_excluded_pos(
-                cls, 
-                letters_included: str, 
-                word_length: int, 
-                def_input:list[str] | None = None
+                cls,
+                letters_included: str,
+                word_length: int,
+                def_input: list[str] | None = None,
             ) -> list[str]:
                 """
                 Запрашивает у пользователя, в каких позициях не могут находиться известные символы.
-                
-                Для каждой позиции слова пользователю предлагается ввести набор символов 
-                из множества `letters_included`, которые не могут стоять в этой позиции. 
+
+                Для каждой позиции слова пользователю предлагается ввести набор символов
+                из множества `letters_included`, которые не могут стоять в этой позиции.
                 Ввод для каждой позиции очищается от повторов и символы
                 вне `letters_included` отбрасываются.
                 """
@@ -127,31 +146,40 @@ class ApplicationService:
                     )
 
                 letters_excluded_pos: list[str] = []
-                
-                cls.log.info(msg = 'Введите символы искомого слова, которых нет в данных позициях.', pretty = True)
+
+                cls.log.info(
+                    msg="Введите символы искомого слова, которых нет в данных позициях.",
+                    pretty=True,
+                )
                 for index in range(word_length):
-                    cls.log.info(msg = f"Позиция {index+1} ({index*'+'}*{(word_length-index-1)*'+'}):", pretty = True)
+                    cls.log.info(
+                        msg=f"Позиция {index + 1} ({index * '+'}*{(word_length - index - 1) * '+'}):",
+                        pretty=True,
+                    )
                     raw: str = def_input[index] if def_input is not None else input()
                     letters_excluded_pos_item = re_sub(
-                        pattern=rf'[^{re_escape(letters_included)}]' , 
-                        repl='', 
-                        string= cls._uniq_chars(letters=raw)
+                        pattern=rf"[^{re_escape(letters_included)}]",
+                        repl="",
+                        string=cls._uniq_chars(letters=raw),
                     )
-                    cls.log.info(msg = f'Были обнаружены символы: {list(letters_excluded_pos_item)}.', pretty = True)
+                    cls.log.info(
+                        msg=f"Были обнаружены символы: {list(letters_excluded_pos_item)}.",
+                        pretty=True,
+                    )
                     letters_excluded_pos.append(letters_excluded_pos_item)
                 return letters_excluded_pos
 
             @classmethod
             def input_letters_fixed_pos(
-                cls, 
-                letters_included: str, 
-                word_length: int, 
-                def_input:list[str] | None = None
+                cls,
+                letters_included: str,
+                word_length: int,
+                def_input: list[str] | None = None,
             ) -> list[str]:
                 """
                 Запрашивает у пользователя символы, которые точно стоят в заданных позициях слова.
 
-                Для каждой позиции слова пользователю предлагается ввести строку, 
+                Для каждой позиции слова пользователю предлагается ввести строку,
                 содержащую хотя бы один символ из множества `letters_included`.
                 Ввод для каждой позиции очищается от повторов и символы
                 вне `letters_included` отбрасываются.
@@ -162,23 +190,31 @@ class ApplicationService:
                         "Количество элементов 'def_input' должно соответствовать 'word_length'."
                     )
                 letters_fixed_pos: list[str] = []
-                
+
                 cls.log.info(
-                    msg = (
-                        'Введите символы искомого слова, которые находятся в данных позициях. '
-                        'Будет считан первый подходящий символ для каждой позиции.'
-                    ), 
-                    pretty = True
+                    msg=(
+                        "Введите символы искомого слова, которые находятся в данных позициях. "
+                        "Будет считан первый подходящий символ для каждой позиции."
+                    ),
+                    pretty=True,
                 )
                 for index in range(word_length):
-                    cls.log.info(msg = f"Позиция {index+1} ({index*'+'}*{(word_length-index-1)*'+'}):", pretty = True)
+                    cls.log.info(
+                        msg=f"Позиция {index + 1} ({index * '+'}*{(word_length - index - 1) * '+'}):",
+                        pretty=True,
+                    )
                     raw: str = def_input[index] if def_input is not None else input()
-                    letters_fixed_pos_item = (re_sub(
-                        pattern=rf'[^{re_escape(letters_included)}]', 
-                        repl='', 
-                        string= cls._uniq_chars(letters=raw)
-                    ))[:1]
-                    cls.log.info(msg = f'Были обнаружены символы: {list(letters_fixed_pos_item)}.', pretty = True)
+                    letters_fixed_pos_item = (
+                        re_sub(
+                            pattern=rf"[^{re_escape(letters_included)}]",
+                            repl="",
+                            string=cls._uniq_chars(letters=raw),
+                        )
+                    )[:1]
+                    cls.log.info(
+                        msg=f"Были обнаружены символы: {list(letters_fixed_pos_item)}.",
+                        pretty=True,
+                    )
                     letters_fixed_pos.append(letters_fixed_pos_item)
                 return letters_fixed_pos
 
@@ -190,8 +226,8 @@ class ApplicationService:
             Используется для приведения списков `letters_excluded_pos` и `letters_fixed_pos`
             в соответствие с фактическим набором допустимых символов `letters_included`.
             """
-            invalid_symbols = ''.join(set(''.join(check_list)) - set(correct))
-            table_excluded = str.maketrans('', '', invalid_symbols)
+            invalid_symbols = "".join(set("".join(check_list)) - set(correct))
+            table_excluded = str.maketrans("", "", invalid_symbols)
             return [elem.translate(table_excluded) for elem in check_list]
 
         @classmethod
@@ -216,31 +252,29 @@ class ApplicationService:
             len_letters_fixed_pos: int = len(lfm.letters_fixed_pos)
 
             if (
-                lfm.word_length < len_letters_excluded_pos 
+                lfm.word_length < len_letters_excluded_pos
                 or lfm.word_length < len_letters_fixed_pos
             ):
                 raise ValueError(
                     "letters_fixed_pos и letters_excluded_pos должны соответствовать длине слова."
                 )
-            
+
             if lfm.word_length > len_letters_excluded_pos:
                 for _ in range(lfm.word_length - len_letters_excluded_pos):
-                    lfm.letters_excluded_pos.append('')
+                    lfm.letters_excluded_pos.append("")
 
             if lfm.word_length > len_letters_fixed_pos:
-                lfm.letters_fixed_pos = f'{lfm.letters_fixed_pos}{(lfm.word_length - len_letters_fixed_pos)*"+"}'
+                lfm.letters_fixed_pos = f"{lfm.letters_fixed_pos}{(lfm.word_length - len_letters_fixed_pos) * '+'}"
 
-            table_excluded = str.maketrans('', '', lfm.letters_excluded)
+            table_excluded = str.maketrans("", "", lfm.letters_excluded)
             lfm.letters_included = lfm.letters_included.translate(table_excluded)
 
             lfm.letters_excluded_pos = cls._correct_list(
-                check_list = lfm.letters_excluded_pos, 
-                correct = lfm.letters_included
+                check_list=lfm.letters_excluded_pos, correct=lfm.letters_included
             )
 
             lfm.letters_fixed_pos = cls._correct_list(
-                check_list = lfm.letters_fixed_pos, 
-                correct = lfm.letters_included
+                check_list=lfm.letters_fixed_pos, correct=lfm.letters_included
             )
             return lfm
 
@@ -266,54 +300,56 @@ class ApplicationService:
             word_length = inp.input_len_word()
             letters_excluded = inp.input_letters_excluded()
             letters_included = inp.input_letters_included(
-                letters_excluded = letters_excluded
+                letters_excluded=letters_excluded
             )
             letters_excluded_pos: list[str] = []
             letters_fixed_pos: list[str] = []
 
             if letters_included:
                 letters_excluded_pos = inp.input_letters_excluded_pos(
-                    letters_included = letters_included, 
-                    word_length = word_length
+                    letters_included=letters_included, word_length=word_length
                 )
                 letters_fixed_pos = inp.input_letters_fixed_pos(
-                    letters_included = letters_included, 
-                    word_length = word_length
+                    letters_included=letters_included, word_length=word_length
                 )
 
             return LetterFilterModel(
-                word_length = word_length,
-                letters_excluded = letters_excluded,
-                letters_included = letters_included,
-                letters_excluded_pos = letters_excluded_pos,
-                letters_fixed_pos = letters_fixed_pos,
+                word_length=word_length,
+                letters_excluded=letters_excluded,
+                letters_included=letters_included,
+                letters_excluded_pos=letters_excluded_pos,
+                letters_fixed_pos=letters_fixed_pos,
             )
 
         @classmethod
-        def _build_filter(cls, is_input: bool, lfm: LetterFilterModel) -> LetterFilterModel:
+        def _build_filter(
+            cls, is_input: bool, lfm: LetterFilterModel
+        ) -> LetterFilterModel:
             """
             Формирует модель фильтрации `LetterFilterModel` из двух возможных источников:
             - если `is_input=True` — интерактивно запрашивает параметры у пользователя;
-            - если `is_input=False` — использует данные из переданного объекта 
+            - если `is_input=False` — использует данные из переданного объекта
             `LetterFilterModel`, нормализуя его через `_normalize_filter_from_config`.
-            
+
             Возвращает:
                 Нормализованный экземпляр `LetterFilterModel`, готовый для применения
-                к словарю слов.    
+                к словарю слов.
             """
-            return cls._build_lmf_filter() if is_input else cls._build_correct_lfm_pos(lfm=lfm)
+            return (
+                cls._build_lmf_filter()
+                if is_input
+                else cls._build_correct_lfm_pos(lfm=lfm)
+            )
 
         @staticmethod
         def _filter_positions(
-            word: str,
-            letters_fixed_pos: list[str],
-            letters_excluded_pos: list[str]
+            word: str, letters_fixed_pos: list[str], letters_excluded_pos: list[str]
         ) -> bool:
             """
             Проверяет, удовлетворяет ли слово ограничениям по позициям символов.
 
             Для каждой позиции слова:
-                - если в `letters_fixed_pos[index]` указан символ, 
+                - если в `letters_fixed_pos[index]` указан символ,
                 то в `word[index]` должен стоять именно этот символ;
                 - в `letters_excluded_pos[index]` перечислены символы, которые
                 не могут находиться в позиции `index`.
@@ -323,7 +359,7 @@ class ApplicationService:
             """
             if not letters_fixed_pos and not letters_excluded_pos:
                 return True
-            
+
             for index, letter in enumerate(word):
                 forbidden = letters_excluded_pos[index]
 
@@ -353,8 +389,7 @@ class ApplicationService:
             words: set[str] = set()
 
             for line in uts.read_file_line_by_line(
-                file_path = path_file_ru_words, 
-                encoding = encoding_ru_words
+                file_path=path_file_ru_words, encoding=encoding_ru_words
             ):
                 if word := line.lower():
                     words.add(word)
@@ -366,9 +401,9 @@ class ApplicationService:
                 and set_included.issubset(word)
                 and set_excluded.isdisjoint(word)
                 and cls._filter_positions(
-                    word = word,
-                    letters_fixed_pos = lmf.letters_fixed_pos,
-                    letters_excluded_pos = lmf.letters_excluded_pos,
+                    word=word,
+                    letters_fixed_pos=lmf.letters_fixed_pos,
+                    letters_excluded_pos=lmf.letters_excluded_pos,
                 )
             ]
 
@@ -396,7 +431,7 @@ class ApplicationService:
             if current_line:
                 lines.append(current_line)
 
-            return '\n'.join(lines)
+            return "\n".join(lines)
 
         @classmethod
         def _save_words_to_file(cls, words: str) -> Path:
@@ -407,25 +442,23 @@ class ApplicationService:
             path_report_folder: Path = cls.cfg.path_report_folder
             path_report_file: Path = cls.cfg.path_report_file
 
-            path_report_folder.mkdir(parents = True, exist_ok = True)
+            path_report_folder.mkdir(parents=True, exist_ok=True)
 
-            with path_report_file.open('w', encoding = 'utf-8') as words_file:
+            with path_report_file.open("w", encoding="utf-8") as words_file:
                 words_file.write(words)
-            
+
             cls.log.info(
-                msg = (
-                    f'Файл с отобранными словами создан по пути: '
+                msg=(
+                    f"Файл с отобранными словами создан по пути: "
                     f'"{path_report_file.relative_to(Path.cwd())}".'
-                ), 
-                pretty = True
+                ),
+                pretty=True,
             )
             return path_report_file
 
         @classmethod
         def run_search(
-            cls, 
-            is_input: bool = False, 
-            lfm: LetterFilterModel | None = None
+            cls, is_input: bool = False, lfm: LetterFilterModel | None = None
         ) -> tuple[str, int, Path | None]:
             """
             Выполняет поиск слов по заданным пользователем ограничениям.
@@ -434,16 +467,16 @@ class ApplicationService:
                 1. Формирует модель фильтрации `LetterFilterModel`:
                 - либо интерактивно (если `is_input=True`),
                 - либо на основе конфигурации `Config` (если `is_input=False`).
-                
+
                 2. Загружает словарь русских слов из файла `path_file_ru_words`,
                 приводит его к нижнему регистру и разбивает на уникальные слова.
-                
+
                 3. Отбирает слова, которые:
                 - имеют нужную длину;
                 - содержат все символы из `letters_included`;
                 - не содержат ни одного символа из `letters_excluded`;
                 - удовлетворяют ограничениям по позициям (`_match_positions`).
-                
+
                 4. Если найдено хотя бы одно слово:
                 - создаёт директорию отчётов (при необходимости);
                 - записывает найденные слова в файл отчёта.
@@ -451,18 +484,17 @@ class ApplicationService:
             if lfm is None:
                 lfm = cls.lfm.copy()
 
-            cls.log.info(msg = 'Начат перебор слов.', pretty = True)
-            words: list[str] = cls._filter_words(is_input = is_input, lfm=lfm)
-            cls.log.info(msg = 'Перебор слов завершен.', pretty = True)
+            cls.log.info(msg="Начат перебор слов.", pretty=True)
+            words: list[str] = cls._filter_words(is_input=is_input, lfm=lfm)
+            cls.log.info(msg="Перебор слов завершен.", pretty=True)
 
             quantity_words = len(words)
-            cls.log.info(msg = f'Найдено слов: {quantity_words}.', pretty = True)
+            cls.log.info(msg=f"Найдено слов: {quantity_words}.", pretty=True)
 
-            word_lines: str = cls._normalized_word_lines(words = words)
-            
+            word_lines: str = cls._normalized_word_lines(words=words)
+
             if lfm.is_save_file and quantity_words != 0:
-                path_report_file: Path = cls._save_words_to_file(words = word_lines)
+                path_report_file: Path = cls._save_words_to_file(words=word_lines)
                 return word_lines, quantity_words, path_report_file
-            
+
             return word_lines, quantity_words, None
-        
