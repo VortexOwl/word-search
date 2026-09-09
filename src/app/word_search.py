@@ -386,10 +386,10 @@ class ApplicationService:
             path_file_ru_words: Path = cls.cfg.path_file_ru_words
             encoding_ru_words: str = cls.cfg.encoding_ru_words
 
-            lmf = cls._build_filter(is_input=is_input, lfm=lfm)
+            lfm = cls._build_filter(is_input=is_input, lfm=lfm)
 
-            set_included: set[str] = set(lmf.letters_included)
-            set_excluded: set[str] = set(lmf.letters_excluded)
+            set_included: set[str] = set(lfm.letters_included)
+            set_excluded: set[str] = set(lfm.letters_excluded)
             words: set[str] = set()
 
             for line in uts.read_file_line_by_line(
@@ -401,13 +401,13 @@ class ApplicationService:
             return [
                 word
                 for word in words
-                if len(word) == lmf.word_length
+                if len(word) == lfm.word_length
                 and set_included.issubset(word)
                 and set_excluded.isdisjoint(word)
                 and cls._filter_positions(
                     word=word,
-                    letters_fixed_pos=lmf.letters_fixed_pos,
-                    letters_excluded_pos=lmf.letters_excluded_pos,
+                    letters_fixed_pos=lfm.letters_fixed_pos,
+                    letters_excluded_pos=lfm.letters_excluded_pos,
                 )
             ]
 
