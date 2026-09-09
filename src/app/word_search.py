@@ -41,6 +41,10 @@ class ApplicationService:
             return "".join(dict.fromkeys(letters.lower()))
 
         class InputWordSearch:
+            cfg = WordSearch.cfg
+            log = WordSearch.log
+            lfm = WordSearch.lfm
+            
             @classmethod
             def input_len_word(cls, def_input: str | None = None) -> int:
                 """
