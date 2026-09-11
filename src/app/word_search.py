@@ -309,6 +309,50 @@ class InputFilterBuilder(FilterBuilder):
             letters_fixed_pos.append(letters_fixed_pos_item)
         self._lfm.letters_fixed_pos = letters_fixed_pos
 
+    def _confirm_param(
+        self,
+        prompt: str,
+        provided_input: str | None = None,
+    ) -> bool:
+        """
+        Получает подтверждение пользователя в формате «да» или «нет».
+
+        При интерактивном режиме метод повторяет запрос после некорректного
+        ответа. Если значение передано через ``provided_input``, некорректный
+        ответ приводит к исключению.
+
+        Args:
+            prompt: Текст вопроса пользователю.
+            provided_input: Предварительно заданный ответ. Поддерживаются
+                русские и английские варианты «да» и «нет».
+
+        Returns:
+            ``True`` для положительного ответа и ``False`` для отрицательного.
+
+        Raises:
+            ValueError: Если ``provided_input`` содержит некорректный ответ.
+        """
+        yes = {"yes", "y", "да", "д"}
+        no = {"no", "n", "нет", "не", "н"}
+        self._log.info(
+            msg=f"{prompt} [Y/n]",
+            pretty=True,
+        )
+        while True:
+            raw: str = provided_input if provided_input is not None else input()
+            raw = raw.lower()
+            if raw in yes:
+                return True
+            elif raw in no:
+                return False
+            if provided_input is not None:
+                self._log.error(msg="В `provided_input` указано некорректное значение.")
+                raise ValueError("В `provided_input` указано некорректное значение.")
+            self._log.warning(
+                msg=f"Ошибка ввода.\n{prompt} [Y/n]",
+                pretty=True,
+            )
+
     def build(self) -> LetterFilterModel:
         """
         Собирает модель фильтра из интерактивного ввода.
@@ -336,6 +380,11 @@ class InputFilterBuilder(FilterBuilder):
             self._lfm.letters_excluded_pos = [""] * self._lfm.word_length
             self._lfm.letters_fixed_pos = [""] * self._lfm.word_length
 
+        self._lfm.is_save_file = self._confirm_param(prompt="Сохранить файл?")
+        self._lfm.is_output_terminal = self._confirm_param(
+            prompt="Вывести найденные слова в терминал?"
+        )
+
         return LetterFilterModel(
             word_length=self._lfm.word_length,
             letters_excluded=self._lfm.letters_excluded,
@@ -343,6 +392,7 @@ class InputFilterBuilder(FilterBuilder):
             letters_excluded_pos=self._lfm.letters_excluded_pos,
             letters_fixed_pos=self._lfm.letters_fixed_pos,
             is_save_file=self._lfm.is_save_file,
+            is_output_terminal=self._lfm.is_output_terminal,
         )
 
 
@@ -757,10 +807,13 @@ class ApplicationService:
 
             word_lines: str = self._format_word_lines(cfg=cfg, words=words)
 
-            if quantity_words != 0 and lfm.is_save_file:
-                path_report_file: Path = self._save_report_file(
-                    cfg=cfg, log=log, report_text=word_lines
-                )
-                return word_lines, quantity_words, path_report_file
+            if quantity_words != 0:
+                if lfm.is_output_terminal:
+                    log.info(msg=f"\n{word_lines}", pretty=True)
+                if lfm.is_save_file:
+                    path_report_file: Path = self._save_report_file(
+                        cfg=cfg, log=log, report_text=word_lines
+                    )
+                    return word_lines, quantity_words, path_report_file
 
             return word_lines, quantity_words, None
