@@ -9,13 +9,14 @@ from asyncio import run as async_run
 from utilities.basic_utilities_project import add_workdir_in_PATH
 
 add_workdir_in_PATH()
-from src.words import ApplicationService as app
+from src.app.word_search_v3 import ApplicationService as app
 
 # ----------------------------------------------------------------------------#
 # Application code                                                            #
 # ----------------------------------------------------------------------------#
 
-ws = app.WordSearch
+app_report = app.ReportService()
+app_clear = app.ClearReportService()
 
 
 def start() -> None:
@@ -23,7 +24,7 @@ def start() -> None:
     Точка входа:
     Выполняет поиск слов по заданным пользователем ограничениям.
     """
-    ws.run_search(is_input=True)
+    app_report.create_report(is_interactive=True)
 
 
 def start_basic() -> None:
@@ -33,7 +34,7 @@ def start_basic() -> None:
 
     Результат сохраняется в файл отчёта.
     """
-    ws.run_search()
+    app_report.create_report()
 
 
 def start_clear() -> None:
@@ -41,7 +42,7 @@ def start_clear() -> None:
     Точка входа:
     Запускает асинхронное очищение от файлов директории для формирования отчётов.
     """
-    async_run(app.clear_report_files())
+    async_run(app_clear.clear_report_files())
 
 
 if __name__ == "__main__":

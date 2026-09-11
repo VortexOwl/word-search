@@ -41,7 +41,8 @@ cfg = Config()
 lfm = LetterFilterModel()
 log: SmartLogger = get_smart_logger()
 log.setLevel(cfg.log_level)
-ws = app.WordSearch
+app_report = app.ReportService()
+app_clear = app.ClearReportService()
 
 
 async def open_browser() -> None:
@@ -166,7 +167,7 @@ class SearchQuery(LetterFilterModel):
             ),
         ] = "",
         letters_excluded_pos: Annotated[
-            list[str],
+            list[str] | None,
             Query(
                 alias="excluded position",
                 description="📕 Символы искомого слова, которые отсутствуют в данных позициях.  \n📕 Если символ позиции неизвестен, укажите пробел.",
@@ -237,7 +238,7 @@ async def clear_report_folder() -> dict:
     Очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
-    report = await app.clear_report_files()
+    report = await app_clear.clear_report_files()
     return JSONResponse(content=report, status_code=status.HTTP_200_OK)
 
 
@@ -263,7 +264,9 @@ async def word_search(
                 content=content, status_code=status.HTTP_404_NOT_FOUND
             )
 
-        found_words, quantity_words, report_path = ws.run_search(lfm=search_query)
+        found_words, quantity_words, report_path = app_report.create_report(
+            cfg=cfg, lfm=search_query
+        )
 
         if not found_words:
             content = f"Совпадений не обнаружено.\nКоличество найденных слов: {quantity_words}"

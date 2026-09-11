@@ -71,6 +71,7 @@ class Config(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="APP_")
 
     log_level: int = 10
+    report_line_limit: int = 80
     is_open_webbrowser: bool = True
     data_folder: str = "data"
     encoding_ru_words: str = "utf-8"
