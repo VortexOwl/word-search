@@ -92,29 +92,6 @@ class SearchQuery(LetterFilterModel):
     is_web_save_file: IsYesOrNo = IsYesOrNo.NO
 
     @staticmethod
-    def _validate_single_char_pos(
-        check_list: list[str], max_length: int, alias: str = ""
-    ) -> RequestValidationError | None:
-        """
-        Проверяет, что все элементы списка состоят не более чем из заданного количества символов.
-        Формирует и выбрасывает исключение валидации, если хотя бы один элемент превышает ограничение.
-        """
-        if err_indexes := ", ".join(
-            [str(index) for index, item in enumerate(check_list) if len(item) > 1]
-        ):
-            err_details = [
-                {
-                    "type": "list[str]",
-                    "loc": ("body", alias, err_indexes),
-                    "msg": f"String should have at most {max_length} character",
-                    "input": check_list,
-                    "ctx": {"max_length": max_length},
-                }
-            ]
-            raise RequestValidationError(errors=err_details)
-        return
-
-    @staticmethod
     def _clear_spaces(check_clear: list[str] | str) -> list[str] | str:
         """
         Убирает пробелы из строк списка.
@@ -162,7 +139,7 @@ class SearchQuery(LetterFilterModel):
             str,
             Query(
                 alias="fixed position",
-                description='📗 Символы искомого слова, которые присутствуют в данных позициях.  \n📗 Если символ позиции неизвестен, укажите "+".',
+                description='📗 Символы искомого слова, которые присутствуют в позициях.  \n📗 Если символ позиции неизвестен, укажите "+".',
                 examples=[SearchQuery().letters_fixed_pos],
             ),
         ] = "",
@@ -170,7 +147,7 @@ class SearchQuery(LetterFilterModel):
             list[str] | None,
             Query(
                 alias="excluded position",
-                description="📕 Символы искомого слова, которые отсутствуют в данных позициях.  \n📕 Если символ позиции неизвестен, укажите пробел.",
+                description="📕 Символы искомого слова, которые отсутствуют в позициях.  \n📕 Если символ позиции неизвестен, укажите пробел.",
                 examples=[[SearchQuery().letters_excluded_pos[0]]],
             ),
         ] = None,
@@ -185,14 +162,6 @@ class SearchQuery(LetterFilterModel):
             check_clear=letters_excluded_pos or [""]
         )
         letters_fixed_pos = cls._clear_spaces(check_clear=letters_fixed_pos)
-
-        """
-        cls._validate_single_char_pos(
-            check_list = letters_fixed_pos, 
-            max_length = 1, 
-            alias = "📗 Символы искомого слова, которые присутствуют в данных позициях"
-        )
-        """
 
         return cls(
             word_length=word_length,
