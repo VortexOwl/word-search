@@ -10,7 +10,7 @@ from re import sub as re_sub
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.config import Config, LetterFilterModel
-from src.logs import SmartLogger, get_smart_logger
+from src.logs import SmartLogger
 from src.utilities import Utilities as uts
 
 # ----------------------------------------------------------------------------#
@@ -689,7 +689,7 @@ class ApplicationService:
 
             self._cfg = cfg if cfg is not None else Config()
             self._lfm = lfm if lfm is not None else LetterFilterModel()
-            self._log = log if log is not None else get_smart_logger()
+            self._log = log if log is not None else SmartLogger()
 
         @staticmethod
         def _format_word_lines(cfg: Config, words: list[str]) -> str:
