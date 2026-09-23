@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Результат поиска слов</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+    <main class="container">
+        <h1>Результат поиска слов</h1>
+        {% if found_words %}
+        <p>Количество найденных слов: {{ quantity_words }}</p>
+        <pre>{{ found_words }}</pre>
+        {% else %}
+        <p>Совпадений не обнаружено.<br>Количество найденных слов: 0</p>
+        {% endif %}
+        <button onclick="window.location.href='/search-word/new'">Вернуться к фильтрам</button>
+        
+    </main>
+</body>
+</html>
