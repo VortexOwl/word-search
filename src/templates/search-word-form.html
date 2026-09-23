@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Поиск слов</title>
+    <title>📝 Поиск слов</title>
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
     <script
         src="{{ url_for('static', path='script.js') }}"
@@ -12,11 +12,11 @@
 </head>
 <body>
     <main class="container">
-        <h1>Поиск слов</h1>
+        <h1>📝 Поиск слов</h1>
 
         <form method="get" action="/search-word/search-result">
             <label for="word_length">
-                Количество символов слова.
+                📙 Количество символов слова.
             </label>
             <input
                 type="number"
@@ -27,7 +27,7 @@
             >
 
             <label for="included">
-                Символы, которые есть в слове.
+                ✔️ Символы, которые есть в слове.
             </label>
             <input
                 type="text"
@@ -37,7 +37,7 @@
             >
 
             <label for="excluded">
-                Символы, которых нет в слове.
+                ❌ Символы, которых нет в слове.
             </label>
             <input
                 type="text"
@@ -47,9 +47,9 @@
             >
 
             <label for="fixed_position">
-                Символы на фиксированных позициях.
+                ✔️ Символы на фиксированных позициях.
                 <br>
-                Если символ позиции неизвестен, укажите "+"
+                ✔️ Если символ позиции неизвестен, укажите "+"
             </label>
             <input
                 type="text"
@@ -59,7 +59,7 @@
             >
 
             <label for="excluded_position">
-                Исключённые символы по позициям.
+                ❌ Исключённые символы по позициям.
             </label>
             <div id="excluded-position-list">
                 <div class="dynamic-input">
@@ -78,7 +78,7 @@
             </button>
 
             <label for="saving_file">
-                Сохранить результат в файл?
+                💾 Сохранить результат в файл?
             </label>
             <select id="saving_file" name="saving file">
                 <option value="❌ Нет">Нет</option>
