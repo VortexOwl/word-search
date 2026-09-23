@@ -49,6 +49,12 @@ templates = Jinja2Templates(directory="src/templates")
 
 
 async def open_browser() -> None:
+    """
+    Открывает веб-интерфейс приложения в браузере.
+
+    Функция ожидает запуска сервера, после чего открывает URL приложения
+    в системном браузере. Используется только при запуске не в Docker-контейнере.
+    """
     sc = ServerConfig()
     await a_sleep(1.5)
     loop = a_get_running_loop()
@@ -57,6 +63,22 @@ async def open_browser() -> None:
 
 @asynccontextmanager
 async def lifespan(web: FastAPI) -> None:
+    """
+    Управляет жизненным циклом FastAPI-приложения.
+
+    При запуске записывает сообщение в журнал и при необходимости открывает
+    веб-интерфейс в браузере. При завершении выполняет небольшую задержку,
+    чтобы корректно завершить фоновые операции.
+
+    Args:
+        web: Экземпляр FastAPI-приложения.
+
+    Yields:
+        Управление приложению на время его работы.
+
+    Returns:
+        Ничего не возвращает после завершения жизненного цикла приложения.
+    """
     is_open_webbrowser = cfg.is_open_webbrowser
     is_docker = cfg.is_docker
 
@@ -84,6 +106,9 @@ web.mount("/static", StaticFiles(directory="src/static"), name="static")
 
 
 class IsYesOrNo(str, Enum):
+    """
+    Перечисление вариантов ответа «да» или «нет».
+    """
     YES = "✔️ Да"
     NO = "❌ Нет"
 
@@ -359,7 +384,7 @@ def _void_found(
 @web.get(
     "/search-word/search-result",
     description="Получение списка русских существительных, соответствующих заданным параметрам.",
-    tags=["📑 Поиск и фильтрация слов"],
+    tags=["📝 Поиск и фильтрация слов"],
     summary="Фильтрация слов по критериям",
 )
 async def word_search(
