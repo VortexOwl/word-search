@@ -6,6 +6,7 @@ from asyncio import get_running_loop as a_get_running_loop
 from asyncio import sleep as a_sleep
 from contextlib import asynccontextmanager
 from enum import Enum
+from json import dumps as json_dumps
 from os import getpid as os_getpid
 from os import kill as os_kill
 from signal import SIGINT as signal_SIGINT
@@ -15,8 +16,7 @@ from webbrowser import open as web_open
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
-from fastapi import Depends, FastAPI, HTTPException, Query, status
-from fastapi.exceptions import RequestValidationError
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import (
     FileResponse,
     JSONResponse,
@@ -24,6 +24,8 @@ from fastapi.responses import (
     RedirectResponse,
     Response,
 )
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from uvicorn import run as uvicorn_run
 
 # ----------------------------------------------------------------------------#
@@ -43,6 +45,7 @@ log: SmartLogger = SmartLogger()
 log.setLevel(cfg.log_level)
 app_report = app.ReportService()
 app_clear = app.ClearReportService()
+templates = Jinja2Templates(directory="src/templates")
 
 
 async def open_browser() -> None:
@@ -77,6 +80,8 @@ web = FastAPI(
     lifespan=lifespan,
 )
 
+web.mount("/static", StaticFiles(directory="src/static"), name="static")
+
 
 class IsYesOrNo(str, Enum):
     YES = "✔️ Да"
@@ -94,7 +99,14 @@ class SearchQuery(LetterFilterModel):
     @staticmethod
     def _clear_spaces(check_clear: list[str] | str) -> list[str] | str:
         """
-        Убирает пробелы из строк списка.
+        Удаляет пробелы из строки или элементов списка строк.
+
+        Args:
+            check_clear: Строка или список строк, из которых нужно
+                удалить пробелы.
+
+        Returns:
+            Обработанная строка или список строк без пробелов.
         """
         if isinstance(check_clear, str):
             return "".join(check_clear.split())
@@ -123,7 +135,7 @@ class SearchQuery(LetterFilterModel):
             str,
             Query(
                 alias="included",
-                description="✔️ Символы, которые гарантированно есть в слове.",
+                description="✔️ Символы, которые есть в слове.",
                 examples=[SearchQuery().letters_included],
             ),
         ] = "",
@@ -131,7 +143,7 @@ class SearchQuery(LetterFilterModel):
             str,
             Query(
                 alias="excluded",
-                description="❌ Символы, которых гарантированно нет в слове.",
+                description="❌ Символы, которых нет в слове.",
                 examples=[SearchQuery().letters_excluded],
             ),
         ] = "",
@@ -139,7 +151,7 @@ class SearchQuery(LetterFilterModel):
             str,
             Query(
                 alias="fixed position",
-                description='📗 Символы искомого слова, которые присутствуют в позициях.  \n📗 Если символ позиции неизвестен, укажите "+".',
+                description='✔️ Символы на фиксированных позициях. \n✔️ Если символ позиции неизвестен, укажите "+".',
                 examples=[SearchQuery().letters_fixed_pos],
             ),
         ] = "",
@@ -147,19 +159,40 @@ class SearchQuery(LetterFilterModel):
             list[str] | None,
             Query(
                 alias="excluded position",
-                description="📕 Символы искомого слова, которые отсутствуют в позициях.  \n📕 Если символ позиции неизвестен, укажите пробел.",
+                description="❌ Исключённые символы по позициям. \n❌ Если символ позиции неизвестен, укажите пробел.",
                 examples=[[SearchQuery().letters_excluded_pos[0]]],
             ),
         ] = None,
-    ):
+    ) -> SearchQuery:
         """
-        Собирает и обрабатывает параметры поиска из веб-формы.
-        Преобразует данные формы в экземпляр модели `SearchQuery`.
+        Собирает и нормализует параметры поиска из HTTP-запроса.
+
+        Пробелы удаляются из строковых параметров. Если параметры
+        исключённых символов по позициям отсутствуют, используется список
+        с одним пустым элементом.
+
+        Args:
+            is_web_save_file: Указывает, нужно ли сохранить результат
+                поиска в файл.
+            word_length: Требуемая длина слова.
+            letters_included: Символы, которые должны присутствовать
+                в слове.
+            letters_excluded: Символы, которые не должны присутствовать
+                в слове.
+            letters_fixed_pos: Символы на фиксированных позициях.
+                Для неизвестной позиции используется символ ``+``.
+            letters_excluded_pos: Списки символов, запрещённых на
+                соответствующих позициях.
+
+        Returns:
+            Экземпляр модели ``SearchQuery`` с обработанными параметрами.
         """
         letters_excluded = cls._clear_spaces(check_clear=letters_excluded)
         letters_included = cls._clear_spaces(check_clear=letters_included)
         letters_excluded_pos = cls._clear_spaces(
-            check_clear=letters_excluded_pos or [""]
+            check_clear=(
+                letters_excluded_pos if letters_excluded_pos is not None else [""]
+            )
         )
         letters_fixed_pos = cls._clear_spaces(check_clear=letters_fixed_pos)
 
@@ -174,11 +207,34 @@ class SearchQuery(LetterFilterModel):
 
 
 @web.get("/", include_in_schema=False)
-async def root():
+async def root() -> RedirectResponse:
     """
-    Перенаправляет корневой маршрут на интерактивную документацию `/docs`.
+    Перенаправляет пользователя на HTML-форму поиска слов.
+
+    Returns:
+        HTTP-редирект на страницу ``/search-word/new``.
     """
-    return RedirectResponse(url="/docs", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+    return RedirectResponse(
+        url="/search-word/new", status_code=status.HTTP_307_TEMPORARY_REDIRECT
+    )
+
+
+@web.get("/search-word/new", include_in_schema=False)
+async def new_search(request: Request) -> Response:
+    """
+    Отображает HTML-форму поиска слов.
+
+    Args:
+        request: Текущий HTTP-запрос.
+
+    Returns:
+        HTML-страница с формой параметров поиска.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="search-word-form.html",
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @web.get(
@@ -187,61 +243,161 @@ async def root():
     tags=["⚙️ Конфигурация"],
     summary="Остановить веб-сервер",
 )
-async def shutdown():
+async def shutdown(request: Request) -> Response:
+    """
+    Отправляет текущему процессу сигнал остановки веб-сервера.
+
+    Args:
+        request: Текущий HTTP-запрос. Используется для выбора формата
+            ответа: HTML или JSON.
+
+    Returns:
+        HTML-страница или JSON-ответ с подтверждением отправки сигнала.
+    """
     os_kill(os_getpid(), signal_SIGINT)
     log.info(msg="Запрос на остановку сервера отправлен...", pretty=True)
-    return PlainTextResponse(
-        content="Запрос на остановку сервера отправлен.",
+    if "text/html" in request.headers.get("accept", ""):
+        return templates.TemplateResponse(
+            request=request,
+            name="shutdown.html",
+            status_code=status.HTTP_202_ACCEPTED,
+        )
+    return JSONResponse(
+        content={
+            "status": "ok",
+            "message": "Запрос на остановку сервера отправлен",
+        },
         status_code=status.HTTP_202_ACCEPTED,
     )
 
 
+@web.get("/cleanup", include_in_schema=False)
+async def get_cleanup(request: Request) -> Response:
+    """
+     Отображает HTML-форму очистки папки отчётов.
+
+    Args:
+        request: Текущий HTTP-запрос.
+
+    Returns:
+        HTML-страница с формой запуска очистки отчётов.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="cleanup.html",
+        status_code=status.HTTP_200_OK,
+    )
+
+
 @web.post(
-    "/clear-report-folder",
+    "/cleanup",
     description="Очищает папку для отчетов от файлов.",
     tags=["⚙️ Конфигурация"],
     summary="Очистить от файлов директорию для формирования отчётов",
 )
-async def clear_report_folder() -> dict:
+async def post_cleanup(request: Request) -> Response:
     """
-    Очищает папку от файлов.
-    Возвращает сводку по успешным удалениям и ошибкам.
+    Очищает папку отчётов и возвращает результат операции.
+
+    Args:
+        request: Текущий HTTP-запрос. Используется для выбора формата
+            ответа: HTML или JSON.
+
+    Returns:
+        HTML-страница с отчётом об очистке или JSON-ответ со сводкой
+        операции.
     """
     report = await app_clear.clear_report_files()
-    return JSONResponse(content=report, status_code=status.HTTP_200_OK)
+    if "text/html" in request.headers.get("accept", ""):
+        report["pretty json"] = json_dumps(report, indent=2, ensure_ascii=False)
+        context = {
+            "report": report,
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name="cleanup.html",
+            context=context,
+            status_code=status.HTTP_200_OK,
+        )
+    return JSONResponse(
+        content={
+            "status": "ok",
+            "message": "Ручка очистки директории отчетов от файлов доступна через POST /cleanup",
+            "report": report,
+        },
+        status_code=status.HTTP_200_OK,
+    )
+
+
+def _void_found(
+    request: Request, 
+    docs_content: str = "Совпадений не обнаружено.\nКоличество найденных слов: 0"
+) -> Response:
+    """
+    Формирует ответ при отсутствии найденных слов.
+
+    Args:
+        request: Текущий HTTP-запрос. Используется для выбора формата
+            ответа: HTML или обычный текст.
+        docs_content: Текст ответа для клиентов, не использующих HTML.
+
+    Returns:
+        HTML-страница или текстовый HTTP-ответ со статусом ``404``.
+    """
+    if "text/html" in request.headers.get("accept", ""):
+        return templates.TemplateResponse(
+            request=request,
+            name="search-word-result.html",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+    return PlainTextResponse(
+        content=docs_content,
+        status_code=status.HTTP_404_NOT_FOUND,
+    )
 
 
 @web.get(
-    "/search-word",
+    "/search-word/search-result",
     description="Получение списка русских существительных, соответствующих заданным параметрам.",
     tags=["📑 Поиск и фильтрация слов"],
     summary="Фильтрация слов по критериям",
 )
 async def word_search(
     search_query: Annotated[SearchQuery, Depends(SearchQuery._search_query_form)],
+    request: Request,
 ) -> Response:
     """
-    Обработчик запроса фильтрации слов по заданным в формах критериям.
+    Ищет русские существительные по заданным критериям.
+
+    При необходимости сохраняет результат в текстовый файл. Формат ответа
+    определяется заголовком ``Accept``: для HTML-клиентов возвращается
+    HTML-страница, для остальных клиентов — текстовый ответ.
+
+    Args:
+        search_query: Нормализованные параметры поиска.
+        request: Текущий HTTP-запрос. Используется для определения формата
+            ответа.
+
+    Returns:
+        HTML-страница, текстовый ответ или файл с найденными словами.
+
+    Raises:
+        HTTPException: Возникает со статусом ``400``, если параметры поиска
+            имеют недопустимые значения.
     """
     try:
         if search_query.is_web_save_file == IsYesOrNo.YES:
             search_query.is_save_file = True
 
         if search_query.word_length <= 1:
-            content = "Совпадений не обнаружено.\nКоличество найденных слов: 0"
-            return PlainTextResponse(
-                content=content, status_code=status.HTTP_404_NOT_FOUND
-            )
+            return _void_found(request=request)
 
         found_words, quantity_words, report_path = app_report.create_report(
             cfg=cfg, lfm=search_query
         )
 
         if not found_words:
-            content = f"Совпадений не обнаружено.\nКоличество найденных слов: {quantity_words}"
-            return PlainTextResponse(
-                content=content, status_code=status.HTTP_404_NOT_FOUND
-            )
+            return _void_found(request=request)
 
         if search_query.is_save_file:
             return FileResponse(
@@ -252,8 +408,21 @@ async def word_search(
                 status_code=status.HTTP_200_OK,
             )
 
+        context = {
+            "quantity_words": quantity_words,
+            "found_words": found_words,
+        }
+        if "text/html" in request.headers.get("accept", ""):
+            return templates.TemplateResponse(
+                request=request,
+                name="search-word-result.html",
+                context=context,
+                status_code=status.HTTP_200_OK,
+            )
+
         content = f"Количество найденных слов: {quantity_words}\n\n{found_words}"
         return PlainTextResponse(content=content, status_code=status.HTTP_200_OK)
+
     except ValueError as err:
         log.error(msg=f"ValueError: {err}")
         raise HTTPException(
@@ -263,8 +432,10 @@ async def word_search(
 
 def web_start() -> None:
     """
-    Запускает веб-приложение FastAPI с использованием сервера Uvicorn.
-    Читает параметры хоста и порта из конфигурации приложения.
+    Запускает веб-приложение FastAPI через сервер Uvicorn.
+
+    Конфигурация хоста, порта и режима автоматической перезагрузки
+    загружается из ``ServerConfig``.
     """
     sc = ServerConfig()
     uvicorn_run(f"{__name__}:web", host=sc.host, port=sc.port, reload=sc.is_reload)
